@@ -13,7 +13,7 @@ sudo apt install nodejs npm -y
 ```bash
 mkdir -p ~/.npm-global
 npm config set prefix '~/.npm-global'
-echo -e '\nexport NPM_CONFIG_PREFIX=~/.npm-global\nexport PATH=~/.npm-global/bin:$PATH' >> ~/.rc
+echo -e '\nexport NPM_CONFIG_PREFIX=~/.npm-global\nexport PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
 source ~/.bashrc
 ```
 
