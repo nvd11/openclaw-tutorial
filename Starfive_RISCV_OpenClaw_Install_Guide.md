@@ -27,12 +27,18 @@ echo -e '\nexport NPM_CONFIG_PREFIX=~/.npm-global\nexport PATH=~/.npm-global/bin
 source ~/.bashrc
 ```
 
-## 第 3 步：全局安装 OpenClaw
-执行全局安装：
+## 第 3 步：全局安装 OpenClaw (暴力绕过 C++ 编译)
+
+> **⚠️ RISC-V 特有大坑预警**：直接执行 `npm install` 会导致雪崩。
+> 因为 RISC-V 缺乏部分依赖（如 `tree-sitter-bash`）的预编译包，NPM 会强行拉起系统的 GCC 15 现场编译 C++，从而触发致命的 `Error: non-constant .uleb128 is not supported` 汇编器报错。
+
+为了彻底绕过这个问题，我们使出“明修栈道，暗度陈仓”的绝招：
+
 ```bash
-npm install -g openclaw
+npm install -g openclaw --ignore-scripts
 ```
-*(注：如果遇到编译警告，通常因为核心依赖已就绪，只要不阻断主流程即可忽略。NPM 在找不到底层预编译包时会动态触发 GCC 编译)*
+
+**原理解析**：`--ignore-scripts` 会直接告诉 npm 强行下载所有包文件，**绝不触发任何 C++ 底层的原生编译**！由于 `tree-sitter-bash` 这类原生模块对 OpenClaw 核心功能（代理通信和工具调用）并非强制必须，这招直接秒杀了报错泥潭，让安装瞬间绿灯放行！
 
 ## 第 4 步：注入专属配置
 进入 `~/.config/openclaw/agents.json` 替换真实的腾讯混元 `apiKey`。
