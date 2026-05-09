@@ -45,3 +45,33 @@ sudo apt-get -o Acquire::Check-Valid-Until=false update
 > `libc6` 的升级破坏了 `systemd`, `locales`, `base-files`，并与 `libc-bin` 产生了死锁。APT 拒绝执行并报错退出。
 
 *(未完待续... 正在探索最终破局方案)*
+## 阶段三：最终破局方案 (2026-05-09 更新)
+
+经历过底层依赖灾难后，我们意识到，必须通过官方源并搭配 NVMe SSD 大幅提升 I/O，才能完成安全、完整的系统升级。
+
+### 1. 切换为清华大学 Debian RISC-V 镜像源
+我们放弃了过时的 Snapshot 源，直接切换到了清华的 `trixie/sid` 源：
+```bash
+sudo sed -i 's/deb http:\/\/snapshot.debian.org.*/deb https:\/\/mirrors.tuna.tsinghua.edu.cn\/debian\/ sid main contrib non-free non-free-firmware/g' /etc/apt/sources.list
+sudo apt update && sudo DEBIAN_FRONTEND=noninteractive apt full-upgrade -y
+```
+此操作成功跨越了 `libc6` 的死锁，系统底层迎来了全面的重生。
+
+### 2. Node.js V24 就绪
+升级完成后，我们在 `/home/gateman` 用户目录下直接部署了 RISC-V 架构的 Unofficial Node.js V24，成功跨越了 OpenClaw 的版本红线。
+
+### 3. 配置无 sudo 的纯净 npm 全局环境
+为了不在系统级别留下垃圾并避免权限安全问题，我们配置了局部的 npm 环境：
+```bash
+mkdir -p ~/.npm-global
+npm config set prefix '~/.npm-global'
+echo -e '\nexport NPM_CONFIG_PREFIX=~/.npm-global\nexport PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### 4. 安装核心: npm install -g openclaw
+**当前执行中**：通过配置好的隔离环境，直接发起了全局安装：
+```bash
+npm install -g openclaw
+```
+*(在 RISC-V 下遇到部分无预编译扩展的包时，会自动触发本地 GCC 的源码编译。基于升级后的系统，编译通过率得到保障。)*
