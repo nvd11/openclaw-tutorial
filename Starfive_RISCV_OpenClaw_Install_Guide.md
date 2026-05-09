@@ -4,45 +4,42 @@
 本指南基于 **NVMe SSD 脱卡启动**，系统底层为 `Debian trixie/sid` (清华源)。
 
 ## 第 1 步：直接通过 APT 安装原生 Node.js 24
-一个巨大的好消息！由于我们将系统源升级到了最新的 `trixie/sid`，Debian 官方已经为 RISC-V 架构提供了原生的 Node.js v24.15.0 支持。
-**无需去下载第三方非官方预编译包了！直接包管理器秒杀！**
-
 ```bash
 sudo apt update
 sudo apt install nodejs npm -y
 ```
-安装完成后验证：
-```bash
-node -v   # 应输出 v24.15.0 或以上
-npm -v    # 应输出 v11.x 或以上
-```
 
 ## 第 2 步：配置免 sudo 的全局 npm 环境
-为了安全和权限隔离，防止 `npm install -g` 污染系统环境或产生权限报错，我们配置针对当前用户 (`gateman`) 的局部全局 npm 目录：
-
 ```bash
 mkdir -p ~/.npm-global
 npm config set prefix '~/.npm-global'
-echo -e '\nexport NPM_CONFIG_PREFIX=~/.npm-global\nexport PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
+echo -e '\nexport NPM_CONFIG_PREFIX=~/.npm-global\nexport PATH=~/.npm-global/bin:$PATH' >> ~/.rc
 source ~/.bashrc
 ```
 
-## 第 3 步：全局安装 OpenClaw (暴力绕过 C++ 编译)
-
-> **⚠️ RISC-V 特有大坑预警**：直接执行 `npm install` 会导致雪崩。
-> 因为 RISC-V 缺乏部分依赖（如 `tree-sitter-bash`）的预编译包，NPM 会强行拉起系统的 GCC 15 现场编译 C++，从而触发致命的 `Error: non-constant .uleb128 is not supported` 汇编器报错。
-
-为了彻底绕过这个问题，我们使出“明修栈道，暗度陈仓”的绝招：
-
+## 第 3 步：绕过报错安装核心引擎
+由于 RISC-V 版 Debian sid 的 GCC 15 汇编器存在 Bug，会导致 `tree-sitter` 编译报错（`.uleb128`），我们使用参数绕过原生扩展：
 ```bash
 npm install -g openclaw --ignore-scripts
 ```
 
-**原理解析**：`--ignore-scripts` 会直接告诉 npm 强行下载所有包文件，**绝不触发任何 C++ 底层的原生编译**！由于 `tree-sitter-bash` 这类原生模块对 OpenClaw 核心功能（代理通信和工具调用）并非强制必须，这招直接秒杀了报错泥潭，让安装瞬间绿灯放行！
+## 第 4 步 (高阶玩法)：使用 Clang 补齐原生扩展 (可选)
+如果希望 OpenClaw 拥有完整的 Bash 语法树精确分析能力（用于高阶代码重构），我们可以用 LLVM/Clang 替换有 Bug 的 GCC 编译器进行单独补发编译：
 
-## 第 4 步：注入专属配置
-进入 `~/.config/openclaw/agents.json` 替换真实的腾讯混元 `apiKey`。
-完成后重启服务：
+```bash
+# 1. 安装 Clang 编译器
+sudo apt install clang -y
+
+# 2. 进入底层出错的模块目录
+cd ~/.npm-global/lib/node_modules/openclaw/node_modules/tree-sitter-bash
+
+# 3. 强制使用 Clang 重新编译
+CC=clang CXX=clang++ npx node-gyp rebuild
+```
+*(编译成功后会生成 `tree_sitter_bash_binding.node`，此时 OpenClaw 将满血复活成 100% 完美体。)*
+
+## 第 5 步：注入专属配置并启动服务
+配置 `~/.config/openclaw/agents.json` 替换真实的 API Key，然后：
 ```bash
 systemctl --user restart openclaw-gateway
 ```
