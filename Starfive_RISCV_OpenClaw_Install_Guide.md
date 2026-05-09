@@ -25,7 +25,6 @@ npm install -g openclaw --ignore-scripts
 
 ## 第 4 步 (高阶玩法)：使用 Clang 补齐原生扩展 (可选)
 如果希望 OpenClaw 拥有完整的 Bash 语法树精确分析能力（用于高阶代码重构），我们可以用 LLVM/Clang 替换有 Bug 的 GCC 编译器进行单独补发编译：
-
 ```bash
 # 1. 安装 Clang 编译器
 sudo apt install clang -y
@@ -38,8 +37,38 @@ CC=clang CXX=clang++ npx node-gyp rebuild
 ```
 *(编译成功后会生成 `tree_sitter_bash_binding.node`，此时 OpenClaw 将满血复活成 100% 完美体。)*
 
-## 第 5 步：注入专属配置并启动服务
-配置 `~/.config/openclaw/agents.json` 替换真实的 API Key，然后：
+## 第 5 步：注入专属网络配置并获取访问 Token
+为了让局域网内其他电脑可以访问 WebUI，且支持非 HTTPS 登录，需要创建以下配置文件：
+
+执行以下命令生成 `~/.openclaw/openclaw.json`：
+```bash
+mkdir -p ~/.openclaw
+cat << 'INNER_EOF' > ~/.openclaw/openclaw.json
+{
+  "gateway": {
+    "mode": "local",
+    "bind": "lan",
+    "controlUi": {
+      "allowedOrigins": [
+        "http://localhost:18789",
+        "http://10.0.1.227:18789",
+        "http://127.0.0.1:18789"
+      ],
+      "allowInsecureAuth": true
+    }
+  }
+}
+INNER_EOF
+```
+
+进入 `~/.config/openclaw/agents.json` 替换真实的腾讯混元 `apiKey`。
+完成后重启服务：
 ```bash
 systemctl --user restart openclaw-gateway
 ```
+
+重启后，获取局域网访问控制面板的 Token：
+```bash
+cat ~/.openclaw/openclaw.json | grep token
+```
+复制生成的字符串，在 `http://10.0.1.227:18789/webchat` 页面登录即可。
