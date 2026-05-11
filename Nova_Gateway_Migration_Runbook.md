@@ -19,3 +19,11 @@
 cp ~/.openclaw/openclaw.json ~/.openclaw/openclaw.json.bak_phase1
 node -e "const fs = require('fs\); const f = '/home/gateman/.openclaw/openclaw.json'; const c = JSON.parse(fs.readFileSync(f, 'utf8\)); if(c.plugins && c.plugins.entries && c.plugins.entries.slack) c.plugins.entries.slack.enabled = false; if(c.plugins && c.plugins.entries && c.plugins.entries.feishu) c.plugins.entries.feishu.enabled = false; c.gateway.mode = 'remote'; c.gateway.remote = {url: 'ws://100.94.13.17:18789', token: 'b8d0c7baee9ff1ff3e706127c516e99048f956a944e5762a'}; fs.writeFileSync(f, JSON.stringify(c, null, 2));"
 ```
+*Command executed on StarFive (fix remote mode config error):*
+```bash
+# The node was configured as gateway mode: remote, but the service runs `openclaw gateway`.
+# For remote nodes, it should run `openclaw node` instead.
+sed -i 's/openclaw\/dist\/index.js gateway/openclaw\/dist\/index.js node/g' ~/.config/systemd/user/openclaw-gateway.service
+systemctl --user daemon-reload
+systemctl --user restart openclaw-gateway
+```
