@@ -27,3 +27,14 @@ sed -i 's/openclaw\/dist\/index.js gateway/openclaw\/dist\/index.js node/g' ~/.c
 systemctl --user daemon-reload
 systemctl --user restart openclaw-gateway
 ```
+
+### Executing Phase 2: Modify Alice (GCP) Configuration
+
+**Action:** Update Alice openclaw.json to act as a central gateway, handle multi-account Slack routing (alice and nova), and distribute tasks.
+
+*Command to be executed on Alice (GCP):*
+```bash
+cp ~/.openclaw/openclaw.json ~/.openclaw/openclaw.json.bak_phase2
+node -e "const fs = require('fs\); const f = '/home/gateman/.openclaw/openclaw.json'; const c = JSON.parse(fs.readFileSync(f, 'utf8\)); c.channels.slack.accounts = { alice: { botToken: c.channels.slack.botToken, appToken: c.channels.slack.appToken }, nova: { botToken: '<NOVA_BOT_TOKEN> হবেন, appToken: \<NOVA_APP_TOKEN>' } }; delete c.channels.slack.botToken; delete c.channels.slack.appToken; c.bindings = [ { type: 'route', agentId: 'main', match: { channel: 'slack', accountId: 'alice' } }, { type: 'route', agentId: 'nova', match: { channel: 'slack', accountId: 'nova' } } ]; fs.writeFileSync(f, JSON.stringify(c, null, 2));"
+systemctl --user restart openclaw-gateway
+```
