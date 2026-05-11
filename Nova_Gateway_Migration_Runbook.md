@@ -38,3 +38,14 @@ cp ~/.openclaw/openclaw.json ~/.openclaw/openclaw.json.bak_phase2
 node -e "const fs = require('fs\); const f = '/home/gateman/.openclaw/openclaw.json'; const c = JSON.parse(fs.readFileSync(f, 'utf8\)); c.channels.slack.accounts = { alice: { botToken: c.channels.slack.botToken, appToken: c.channels.slack.appToken }, nova: { botToken: '<NOVA_BOT_TOKEN> হবেন, appToken: \<NOVA_APP_TOKEN>' } }; delete c.channels.slack.botToken; delete c.channels.slack.appToken; c.bindings = [ { type: 'route', agentId: 'main', match: { channel: 'slack', accountId: 'alice' } }, { type: 'route', agentId: 'nova', match: { channel: 'slack', accountId: 'nova' } } ]; fs.writeFileSync(f, JSON.stringify(c, null, 2));"
 systemctl --user restart openclaw-gateway
 ```
+
+### Phase 1 Troubleshooting & Correction
+**Issue:** Node connection failed with EHOSTUNREACH. StarFive is isolated on the LAN without Tailscale, thus unable to route to Alice Tailscale IP.
+**Resolution:** Switch to Option A. The node will connect to Alice via Alice Public IP (34.39.2.90).
+
+*Command to be executed on StarFive (Update remote config to use Public IP):*
+```bash
+node -e "const fs = require('fs\); const f = '/home/gateman/.config/systemd/user/openclaw-gateway.service'; let content = fs.readFileSync(f, 'utf8\); content = content.replace(/100.94.13.17:18789/g, '34.39.2.90:18789'); fs.writeFileSync(f, content);"
+systemctl --user daemon-reload
+systemctl --user restart openclaw-gateway
+```

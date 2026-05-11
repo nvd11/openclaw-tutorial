@@ -58,3 +58,7 @@
 Pending: 0 · Paired: 0)。
 2. 在 Slack 中分别  和 ，验证消息是否正确路由，且互不干扰。
 3. 检查星光板底层日志的 ，验证 CPU 卡死问题是否已解决。
+
+---
+**[UPDATE 2026-05-11] Architecture Correction**:
+StarFive does not run Tailscale. It will connect to Alice using Alice Public IP (34.39.2.90:18789). GCP firewall must be configured to allow inbound traffic on this port.
