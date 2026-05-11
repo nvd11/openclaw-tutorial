@@ -7,3 +7,5 @@
 > It contains the exact execution logs, commands run, and key outputs.
 
 ---
+### Phase 0: Requirements Update
+- **Target Channels**: Nova will ONLY be routed through Slack (). Feishu routing for Nova is explicitly EXCLUDED from this migration per Boss's instructions.
